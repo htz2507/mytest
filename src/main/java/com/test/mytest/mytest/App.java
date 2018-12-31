@@ -14,7 +14,7 @@ public class App
     }
 
 
-    public void show_name() {
+    public static  void show_name() {
     	System.out.println("My name is Htz.");
     }
 
