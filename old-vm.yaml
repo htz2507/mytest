@@ -1,0 +1,77 @@
+kind: Vpc
+apiVersion: kubeovn.io/v1
+metadata:
+  name: vpc1
+spec: {}
+
+---
+apiVersion: kubeovn.io/v1
+kind: Subnet
+metadata:
+  name: subnet1
+spec:
+  vpc: vpc1
+  protocol: IPv4
+  cidrBlock: 10.32.44.0/24
+  gateway: 10.32.44.1
+
+---
+apiVersion: kubeovn.io/v1
+kind: Subnet
+metadata:
+  name: subnet2
+spec:
+  vpc: vpc1
+  protocol: IPv4
+  cidrBlock: 10.32.45.0/24
+  gateway: 10.32.45.1
+
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: htz-vm
+spec:
+  running: true
+  template:
+    metadata:
+      creationTimestamp:
+      labels:
+        kubevirt.io/domain: htz-vm
+        kubevirt.io/size: small
+      annotations:
+        hci-nad1.default.ovn.kubernetes.io/logical_switch: subnet1
+    spec:
+      domain:
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: containerdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+            - name: net1-interface
+              bridge: {}
+        machine:
+          type: q35
+        resources:
+          requests:
+            memory: 64M
+      networks:
+        - name: default
+          pod: {}
+        - name: net1-interface
+          multus:
+            networkName: default/hci-nad1
+      volumes:
+        - containerDisk:
+            image: support.myhci.com:5000/kubevirt/cirros-container-disk-demo:latest
+            imagePullPolicy: IfNotPresent
+          name: containerdisk
+        - cloudInitNoCloud:
+            userDataBase64: SGkuXG4=
+          name: cloudinitdisk
